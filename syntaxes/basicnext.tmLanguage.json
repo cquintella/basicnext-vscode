@@ -26,6 +26,9 @@
         },
         {
             "include": "#builtins"
+        },
+        {
+            "include": "#modules"
         }
     ],
     "repository": {
@@ -221,7 +224,7 @@
                 },
                 {
                     "name": "keyword.declaration.bn",
-                    "match": "\\b(LET|CONST|AS|IMPLEMENTS|EXTENDS|IMPORT|EXPORT|PUBLIC|PRIVATE|STATIC|IN|IS|RELEASE|WEAK)\\b"
+                    "match": "\\b(LET|CONST|AS|IMPLEMENTS|EXTENDS|IMPORT|EXPORT|PUBLIC|PRIVATE|PROTECTED|STATIC|IN|IS|OVERRIDE|RELEASE|WEAK)\\b"
                 },
                 {
                     "name": "keyword.operator.new.bn",
@@ -272,6 +275,10 @@
         "builtins": {
             "name": "support.function.bn",
             "match": "\\b(PRINT|INPUT|LEN|SIZEOF|HOST)\\b"
+        },
+        "modules": {
+            "name": "support.class.bn",
+            "match": "\\b(BNMath|BNData|BNLog|BNWeb|BNJson|BNDispatch|BNCrypto|BNSqlite)\\b"
         }
     }
 }

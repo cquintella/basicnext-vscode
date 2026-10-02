@@ -22,6 +22,50 @@ function cfg() {
   return vscode.workspace.getConfiguration("basicnext");
 }
 
+// Basic Next 0.6 ships two executables: `bni` (interpreter, check, lsp, dap)
+// and `bnc` (compiler); `bn` is a compatibility dispatcher that retires in
+// 0.7. An explicit `basicnext.executable` wins; otherwise prefer `bni` when
+// it runs, and fall back to `bn` for a 0.5 toolchain.
+let resolvedExecutable = null;
+function defaultExecutable() {
+  if (resolvedExecutable) return resolvedExecutable;
+  for (const candidate of ["bni", "bn"]) {
+    try {
+      const probe = cp.spawnSync(candidate, ["--version"], { timeout: 4000 });
+      if (probe.status === 0) return (resolvedExecutable = candidate);
+    } catch (_) { /* try the next candidate */ }
+  }
+  return (resolvedExecutable = "bni");
+}
+function executablePath() {
+  const configured = cfg().get("executable", "");
+  return configured && configured !== "bn" ? configured : defaultExecutable();
+}
+
+let resolvedCompiler = null;
+function defaultCompilerExecutable() {
+  if (resolvedCompiler) return resolvedCompiler;
+  const interp = executablePath();
+  if (interp && interp !== "bni" && interp !== "bn") {
+    const candidate = path.join(path.dirname(interp), process.platform === "win32" ? "bnc.exe" : "bnc");
+    try {
+      const probe = cp.spawnSync(candidate, ["--version"], { timeout: 4000 });
+      if (probe.status === 0) return (resolvedCompiler = candidate);
+    } catch (_) { /* try the next candidate */ }
+  }
+  for (const candidate of ["bnc", "bn"]) {
+    try {
+      const probe = cp.spawnSync(candidate, ["--version"], { timeout: 4000 });
+      if (probe.status === 0) return (resolvedCompiler = candidate);
+    } catch (_) { /* try the next candidate */ }
+  }
+  return (resolvedCompiler = "bnc");
+}
+function compilerExecutablePath() {
+  const configured = cfg().get("compilerExecutable", "");
+  return configured ? configured : defaultCompilerExecutable();
+}
+
 function activeDocument() {
   const document = vscode.window.activeTextEditor?.document;
   return document?.languageId === "basicnext" && !document.isUntitled ? document : undefined;
@@ -73,15 +117,15 @@ function lspCompletionItems(result) {
   });
 }
 
-/** Reserved words from docs/0.5.0/0.5.0.ebnf (uppercase spellings). */
+/** Reserved words from Basic Next 0.6 EBNF (uppercase spellings). */
 const RESERVED_WORDS = new Set([
   "AND", "AS", "ASYNC", "AWAIT", "BOOLEAN", "BYTE", "CLASS", "CONST",
   "CONSTRUCTOR", "CONTINUE", "DATE", "DESTRUCTOR", "DIV", "EACH", "ELSE",
   "END", "EOF", "EXIT", "EXPORT", "EXTENDS", "FALSE", "FLOAT", "FLOAT32",
   "FLOAT64", "FOR", "FUNCTION", "HOST", "IF", "IMPLEMENTS", "IMPORT", "IN",
   "INPUT", "INT8", "INT16", "INT32", "INT64", "INTEGER", "INTERFACE", "IS",
-  "LEN", "LET", "NA", "NEW", "NOT", "NULL", "OR", "PARALLEL", "POINTER",
-  "PRINT", "PRIVATE", "PUBLIC", "RELEASE", "REPEAT", "RETURN", "SELF", "SHL",
+  "LEN", "LET", "NA", "NEW", "NOT", "NULL", "OR", "OVERRIDE", "PARALLEL", "POINTER",
+  "PRINT", "PRIVATE", "PROTECTED", "PUBLIC", "RELEASE", "REPEAT", "RETURN", "SELF", "SHL",
   "SHR", "SIZEOF", "STATIC", "STEP", "STOP", "STRING", "STRUCT", "SUPER",
   "SYSTEM", "THEN", "TIME", "TIMESTAMP", "TIMEZONE", "TO", "TRUE", "UINT16",
   "UINT32", "UINT64", "UNTIL", "VOID", "WEAK", "WHILE", "XOR",
@@ -424,7 +468,7 @@ function startLanguageServer(context, collection) {
     !vscode.languages.registerHoverProvider ||
     !vscode.languages.registerDocumentSymbolProvider
   ) return undefined;
-  const executable = cfg().get("executable", "bn");
+  const executable = executablePath();
   const lspArgs = cfg().get("lspArgs", []) || [];
   const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   const child = cp.spawn(executable, ["lsp", ...lspArgs], { cwd, stdio: ["pipe", "pipe", "pipe"] });
@@ -489,7 +533,7 @@ function startLanguageServer(context, collection) {
 
 function runBnCheck(document, collection) {
   if (!document || document.languageId !== "basicnext" || document.isUntitled) return;
-  const executable = cfg().get("executable", "bn");
+  const executable = executablePath();
   const checkArgs = cfg().get("checkArgs", []) || [];
   const minimum = cfg().get("diagnosticsMinimumSeverity", "warning");
   const cwd = vscode.workspace.getWorkspaceFolder?.(document.uri)?.uri.fsPath
@@ -574,16 +618,16 @@ function registerStatusBar(context) {
   context.subscriptions.push(item);
 
   const refresh = async () => {
-    const executable = cfg().get("executable", "bn");
+    const executable = executablePath();
     const result = await probeBnVersion(executable);
     if (result.ok) {
-      const short = (result.version || "").replace(/^bn\s+/i, "").slice(0, 40);
+      const short = (result.version || "").replace(/^(bni|bnc|bn)\s+/i, "").slice(0, 40);
       item.text = short ? `Basic Next $(check) ${short}` : "Basic Next";
-      item.tooltip = `bn: ${result.version || executable}`;
+      item.tooltip = `bni: ${result.version || executable}`;
       item.backgroundColor = undefined;
     } else {
-      item.text = "Basic Next $(warning) bn missing";
-      item.tooltip = `Could not run '${executable} --version'. Set basicnext.executable or install bn on PATH.`;
+      item.text = "Basic Next $(warning) bni missing";
+      item.tooltip = `Could not run '${executable} --version'. Set basicnext.executable or install bni on PATH.`;
     }
   };
 
@@ -594,7 +638,7 @@ function registerStatusBar(context) {
           { label: "Check current file", action: "check" },
           { label: "Run", action: "run" },
           { label: "Build and Run", action: "build" },
-          { label: "Refresh bn version", action: "refresh" },
+          { label: "Refresh toolchain version", action: "refresh" },
         ],
         { title: "Basic Next" },
       );
@@ -609,7 +653,7 @@ function registerStatusBar(context) {
   refresh();
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration("basicnext.executable")) refresh();
+      if (e.affectsConfiguration("basicnext.executable") || e.affectsConfiguration("basicnext.compilerExecutable")) refresh();
     }),
     vscode.workspace.onDidChangeWorkspaceFolders(() => refresh()),
   );
@@ -622,7 +666,7 @@ function activate(context) {
     const document = activeDocument();
     if (!document) return;
     if (document.isDirty && !await document.save()) return;
-    const executable = cfg().get("executable", "bn");
+    const executable = executablePath();
     const runArgs = cfg().get("runArgs", []) || [];
     const extra = shellQuoteArgs(runArgs);
     const cmd = extra
@@ -634,14 +678,19 @@ function activate(context) {
     const document = activeDocument();
     if (!document) return;
     if (document.isDirty && !await document.save()) return;
-    const executable = cfg().get("executable", "bn");
+    const compiler = compilerExecutablePath();
     const buildArgs = cfg().get("buildArgs", []) || [];
     const extension = process.platform === "win32" ? ".exe" : "";
     const artifact = path.join(os.tmpdir(), `basicnext-${path.basename(document.fileName, ".bn")}${extension}`);
     const extra = shellQuoteArgs(buildArgs);
-    const buildCmd = extra
-      ? `${shellQuote(executable)} build ${extra} ${shellQuote(document.fileName)} -o ${shellQuote(artifact)}`
-      : `${shellQuote(executable)} build ${shellQuote(document.fileName)} -o ${shellQuote(artifact)}`;
+    const isLegacyBn = path.basename(compiler).toLowerCase().startsWith("bn") && !path.basename(compiler).toLowerCase().startsWith("bnc");
+    const buildCmd = isLegacyBn
+      ? (extra
+          ? `${shellQuote(compiler)} build ${extra} ${shellQuote(document.fileName)} -o ${shellQuote(artifact)}`
+          : `${shellQuote(compiler)} build ${shellQuote(document.fileName)} -o ${shellQuote(artifact)}`)
+      : (extra
+          ? `${shellQuote(compiler)} ${extra} ${shellQuote(document.fileName)} -o ${shellQuote(artifact)}`
+          : `${shellQuote(compiler)} ${shellQuote(document.fileName)} -o ${shellQuote(artifact)}`);
     terminal().sendText(`${buildCmd} && ${shellQuote(artifact)}`);
   };
   const check = async () => {

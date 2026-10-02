@@ -8,10 +8,9 @@ const fs = require("fs");
 const Module = require("module");
 const path = require("path");
 
-const root = path.resolve(__dirname, "../../..");
 const extension = path.resolve(__dirname, "..");
 const packageJson = JSON.parse(fs.readFileSync(path.join(extension, "package.json"), "utf8"));
-assert.strictEqual(packageJson.version, "0.5.2");
+assert.strictEqual(packageJson.version, "0.6.4");
 assert.strictEqual(packageJson.contributes.grammars[0].path, "./syntaxes/basicnext.tmLanguage.json");
 assert.strictEqual(packageJson.contributes.debuggers[0].type, "basicnext");
 assert.deepStrictEqual(packageJson.contributes.debuggers[0].languages, ["basicnext"]);
@@ -21,10 +20,6 @@ assert.ok(packageJson.contributes.configuration.properties["basicnext.blockColor
 assert.ok(packageJson.contributes.configuration.properties["basicnext.formatOnSave"]);
 assert.ok(packageJson.contributes.configuration.properties["basicnext.checkOnSave"]);
 assert.ok(packageJson.contributes.configurationDefaults["[basicnext]"]);
-assert.deepStrictEqual(
-  JSON.parse(fs.readFileSync(path.join(root, "docs/library/basicnext.tmLanguage.json"), "utf8")),
-  JSON.parse(fs.readFileSync(path.join(extension, "syntaxes/basicnext.tmLanguage.json"), "utf8")),
-);
 const originalLoad = Module._load;
 const calls = [];
 let saved;
@@ -163,13 +158,13 @@ assert.strictEqual(typeof commands["basicnext.statusBarAction"], "function");
   await commands["basicnext.run"]();
   await commands["basicnext.buildAndRun"]();
   assert.strictEqual(saveCount, 2);
-  assert.match(terminalLines[0], /'bn' run '\/tmp\/example\.bn'/);
-  assert.match(terminalLines[1], /'bn' build '\/tmp\/example\.bn' -o .* && /);
+  assert.match(terminalLines[0], /'(bni|bn)' run '\/tmp\/example\.bn'/);
+  assert.match(terminalLines[1], /'(bnc|bn)'( build)? '\/tmp\/example\.bn' -o .* && /);
 
   configValues.runArgs = ["--trace"];
   terminalLines.length = 0;
   await commands["basicnext.run"]();
-  assert.match(terminalLines[0], /'bn' run '--trace' '\/tmp\/example\.bn'/);
+  assert.match(terminalLines[0], /'(bni|bn)' run '--trace' '\/tmp\/example\.bn'/);
 
   console.log("Basic Next VS Code extension checks passed");
 })().catch((error) => {

@@ -1,8 +1,8 @@
 {
   "name": "basicnext",
   "displayName": "Basic Next",
-  "description": "Language support for Basic Next 0.5.0 (ARC DNA: no DELETE; RELEASE/WEAK; typed AWAIT)",
-  "version": "0.5.2",
+  "description": "Language support for Basic Next 0.6.4 (bni/bnc toolchain, ARC, typed BN IR, BNSqlite, HOST providers)",
+  "version": "0.6.4",
   "publisher": "basicnext",
   "license": "MPL-2.0",
   "engines": {
@@ -17,6 +17,9 @@
     "onLanguage:basicnext"
   ],
   "main": "./extension.js",
+  "scripts": {
+    "test": "node test/test.js && node test/grammar.js && node test/auto-uppercase.js && node test/debug-adapter.js"
+  },
   "contributes": {
     "commands": [
       {
@@ -139,8 +142,13 @@
       "properties": {
         "basicnext.executable": {
           "type": "string",
-          "default": "bn",
-          "description": "Path to the bn executable used by the Basic Next language server, checker, and debugger."
+          "default": "",
+          "description": "Path to the Basic Next interpreter executable (`bni`). Empty: resolve `bni` on PATH (or fallback to `bn`)."
+        },
+        "basicnext.compilerExecutable": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the Basic Next compiler executable (`bnc`). Empty: resolve `bnc` on PATH or adjacent to `bni` (or fallback to `bn`)."
         },
         "basicnext.autoUppercaseKeywords": {
           "type": "boolean",
@@ -171,7 +179,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "Extra arguments inserted after `bn run` and before the source file."
+          "description": "Extra arguments inserted after `bni run` and before the source file."
         },
         "basicnext.buildArgs": {
           "type": "array",
@@ -179,7 +187,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "Extra arguments inserted after `bn build` and before the source file."
+          "description": "Extra arguments passed to `bnc` before the source file."
         },
         "basicnext.checkArgs": {
           "type": "array",
@@ -187,7 +195,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "Extra arguments inserted after `bn check` and before the source file."
+          "description": "Extra arguments inserted after `bni check` and before the source file."
         },
         "basicnext.lspArgs": {
           "type": "array",
@@ -195,17 +203,17 @@
             "type": "string"
           },
           "default": [],
-          "description": "Extra arguments inserted after `bn lsp`."
+          "description": "Extra arguments inserted after `bni lsp`."
         },
         "basicnext.checkOnSave": {
           "type": "boolean",
           "default": true,
-          "description": "Run `bn check` when a Basic Next document is saved and publish diagnostics."
+          "description": "Run `bni check` when a Basic Next document is saved and publish diagnostics."
         },
         "basicnext.checkOnType": {
           "type": "boolean",
           "default": false,
-          "description": "Run `bn check` while typing (debounced)."
+          "description": "Run `bni check` while typing (debounced)."
         },
         "basicnext.checkDebounceMs": {
           "type": "number",
@@ -221,7 +229,7 @@
             "hint"
           ],
           "default": "warning",
-          "description": "Minimum diagnostic severity to show from `bn check` (error = errors only; warning = errors+warnings; hint = all)."
+          "description": "Minimum diagnostic severity to show from `bni check` (error = errors only; warning = errors+warnings; hint = all)."
         },
         "basicnext.snippets.enabled": {
           "type": "boolean",

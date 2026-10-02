@@ -31,7 +31,8 @@ function flushPendingMessages() {
 }
 
 function startChild(request) {
-  const { program, cwd, runtimeExecutable = "bn" } = request.arguments ?? {};
+  // 0.6: the debugger is `bni dap`; `bn dap` still works through the dispatcher.
+  const { program, cwd, runtimeExecutable = "bni" } = request.arguments ?? {};
   if (typeof program !== "string" || program.length === 0) {
     throw new Error("launch requires a program");
   }
@@ -42,7 +43,7 @@ function startChild(request) {
   child.stdout.on("data", (data) => process.stdout.write(data));
   child.stderr.on("data", (data) => process.stderr.write(data));
   child.on("error", (error) => {
-    process.stderr.write(`bn dap failed: ${error.message}\n`);
+    process.stderr.write(`${runtimeExecutable} dap failed: ${error.message}\n`);
   });
   child.on("close", (code, signal) => {
     if (code !== 0 || signal) process.exitCode = code ?? 1;

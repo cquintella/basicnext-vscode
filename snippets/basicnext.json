@@ -6,7 +6,7 @@
       "\t$0",
       "END FUNCTION"
     ],
-    "description": "FUNCTION \u2026 END FUNCTION"
+    "description": "FUNCTION … END FUNCTION"
   },
   "While": {
     "prefix": "WHILE",
@@ -15,7 +15,7 @@
       "\t$0",
       "END WHILE"
     ],
-    "description": "WHILE \u2026 END WHILE"
+    "description": "WHILE … END WHILE"
   },
   "If": {
     "prefix": "IF",
@@ -24,7 +24,7 @@
       "\t$0",
       "END IF"
     ],
-    "description": "IF \u2026 END IF"
+    "description": "IF … END IF"
   },
   "For": {
     "prefix": "FOR",
@@ -33,7 +33,7 @@
       "\t$0",
       "END FOR"
     ],
-    "description": "FOR \u2026 END FOR"
+    "description": "FOR … END FOR"
   },
   "Repeat": {
     "prefix": "REPEAT",
@@ -42,7 +42,7 @@
       "\t$0",
       "UNTIL ${1:condition}"
     ],
-    "description": "REPEAT \u2026 UNTIL"
+    "description": "REPEAT … UNTIL"
   },
   "Class": {
     "prefix": "CLASS",
@@ -51,34 +51,104 @@
       "\t$0",
       "END CLASS"
     ],
-    "description": "CLASS \u2026 END CLASS"
+    "description": "CLASS … END CLASS"
   },
   "Import Host Console": {
     "prefix": "IMPORT HOST.Console",
     "body": [
       "IMPORT HOST.Console AS ${1:CON}"
     ],
-    "description": "IMPORT HOST.Console AS \u2026"
+    "description": "IMPORT HOST.Console AS …"
   },
-  "Import Host File": {
-    "prefix": "IMPORT HOST.File",
+  "Import Host FileSystem": {
+    "prefix": "IMPORT HOST.FileSystem",
     "body": [
-      "IMPORT HOST.File AS ${1:FS}"
+      "IMPORT HOST.FileSystem AS ${1:FS}"
     ],
-    "description": "IMPORT HOST.File AS \u2026"
+    "description": "IMPORT HOST.FileSystem AS …"
   },
   "Import Host Net": {
     "prefix": "IMPORT HOST.Net",
     "body": [
       "IMPORT HOST.Net AS ${1:NET}"
     ],
-    "description": "IMPORT HOST.Net AS \u2026"
+    "description": "IMPORT HOST.Net AS …"
   },
   "Import Host Clock": {
     "prefix": "IMPORT HOST.Clock",
     "body": [
       "IMPORT HOST.Clock AS ${1:CLK}"
     ],
-    "description": "IMPORT HOST.Clock AS \u2026"
+    "description": "IMPORT HOST.Clock AS …"
+  },
+  "Import Host Exec": {
+    "prefix": "IMPORT HOST.Exec",
+    "body": [
+      "IMPORT HOST.Exec AS ${1:Exec}"
+    ],
+    "description": "IMPORT HOST.Exec AS …"
+  },
+  "Import Host Random": {
+    "prefix": "IMPORT HOST.Random",
+    "body": [
+      "IMPORT HOST.Random AS ${1:RND}"
+    ],
+    "description": "IMPORT HOST.Random AS …"
+  },
+  "Import BNSqlite": {
+    "prefix": "IMPORT BNSqlite",
+    "body": [
+      "IMPORT BNSqlite AS ${1:Sqlite}"
+    ],
+    "description": "IMPORT BNSqlite AS …"
+  },
+  "Import BNData": {
+    "prefix": "IMPORT BNData",
+    "body": [
+      "IMPORT BNData AS ${1:Data}"
+    ],
+    "description": "IMPORT BNData AS …"
+  },
+  "Import BNLog": {
+    "prefix": "IMPORT BNLog",
+    "body": [
+      "IMPORT BNLog AS ${1:Log}"
+    ],
+    "description": "IMPORT BNLog AS …"
+  },
+  "Import BNJson": {
+    "prefix": "IMPORT BNJson",
+    "body": [
+      "IMPORT BNJson AS ${1:Json}"
+    ],
+    "description": "IMPORT BNJson AS …"
+  },
+  "Import BNMath": {
+    "prefix": "IMPORT BNMath",
+    "body": [
+      "IMPORT BNMath AS ${1:Math}"
+    ],
+    "description": "IMPORT BNMath AS …"
+  },
+  "Import BNDispatch": {
+    "prefix": "IMPORT BNDispatch",
+    "body": [
+      "IMPORT BNDispatch AS ${1:Dispatch}"
+    ],
+    "description": "IMPORT BNDispatch AS …"
+  },
+  "Import BNCrypto": {
+    "prefix": "IMPORT BNCrypto",
+    "body": [
+      "IMPORT BNCrypto AS ${1:Crypto}"
+    ],
+    "description": "IMPORT BNCrypto AS …"
+  },
+  "Import BNWeb": {
+    "prefix": "IMPORT BNWeb",
+    "body": [
+      "IMPORT BNWeb AS ${1:Web}"
+    ],
+    "description": "IMPORT BNWeb AS …"
   }
 }

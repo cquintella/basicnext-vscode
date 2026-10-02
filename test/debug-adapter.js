@@ -5,10 +5,11 @@
 
 const assert = require("assert");
 const cp = require("child_process");
+const fs = require("fs");
 const path = require("path");
 
-const root = path.resolve(__dirname, "../../..");
-const adapter = cp.spawn(process.execPath, [path.join(root, "plugins/vscode/debugAdapter.js")]);
+const extension = path.resolve(__dirname, "..");
+const adapter = cp.spawn(process.execPath, [path.join(extension, "debugAdapter.js")]);
 let buffer = Buffer.alloc(0);
 let sequence = 1;
 const messages = [];
@@ -80,10 +81,17 @@ adapter.on("close", () => {
   else console.log("Basic Next debug adapter checks passed");
 });
 
+const bnRepo = fs.existsSync(path.resolve(__dirname, "../../basicnext"))
+  ? path.resolve(__dirname, "../../basicnext")
+  : extension;
+const bniCandidate = path.join(bnRepo, "target/debug/bni");
+const runtimeExecutable = fs.existsSync(bniCandidate) ? bniCandidate : "bni";
+const helloFile = path.join(bnRepo, "examples/hello.bn");
+
 send("initialize", {});
 send("configurationDone", {});
 send("launch", {
-  program: path.join(root, "examples/hello.bn"),
-  cwd: root,
-  runtimeExecutable: path.join(root, "target/debug/bn"),
+  program: helloFile,
+  cwd: bnRepo,
+  runtimeExecutable,
 });

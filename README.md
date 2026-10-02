@@ -1,19 +1,20 @@
 # Basic Next for VS Code
 
-Basic Next **0.5.0** language support for Visual Studio Code (extension **0.5.2**).
+Basic Next **0.6.4** language support for Visual Studio Code (extension **0.6.4**).
 
-Aligned with `docs/0.5.0/`: `RELEASE` / `WEAK` / `ASYNC` / `AWAIT` highlighted;
-`DELETE` marked deprecated/illegal (purged from language DNA).
+Aligned with Basic Next 0.6:
+* Dual toolchain support: `bni` (reference interpreter, checker, LSP, DAP) and `bnc` (native AOT compiler for executables and WebAssembly).
+* Full syntax highlighting for 0.6 language features: `RELEASE`, `WEAK`, `ASYNC`, `AWAIT`, `PROTECTED`, `OVERRIDE`, and `BNSqlite`.
+* Standard module snippets: `HOST.FileSystem`, `HOST.Net`, `HOST.Clock`, `HOST.Console`, `HOST.Exec`, `HOST.Random`, `BNSqlite`, `BNData`, `BNLog`, `BNJson`, `BNMath`, `BNDispatch`, `BNCrypto`, `BNWeb`.
+* Direct execution and debugging via `bni dap`.
 
 ## Install
 
-From the repository root, package the extension and install the generated
-VSIX file:
+Package the extension and install the generated VSIX file:
 
 ```sh
-cd plugins/vscode
 npx --yes @vscode/vsce package --allow-missing-repository
-code --install-extension basicnext-0.5.2.vsix
+code --install-extension basicnext-0.6.4.vsix
 ```
 
 Restart VS Code completely after installing or updating the extension. The
@@ -23,17 +24,18 @@ debugger contribution is loaded when the VS Code application starts.
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `basicnext.executable` | `bn` | Path to the `bn` binary |
+| `basicnext.executable` | `""` | Path to the `bni` interpreter binary (empty: auto-detect `bni` on PATH) |
+| `basicnext.compilerExecutable` | `""` | Path to the `bnc` compiler binary (empty: auto-detect `bnc` on PATH or adjacent to `bni`) |
 | `basicnext.autoUppercaseKeywords` | `true` | Uppercase reserved words as you type |
 | `basicnext.autoUppercaseOnPaste` | `true` | Also uppercase whole-token inserts (paste/completion) |
 | `basicnext.autoUppercaseExclusions` | `[]` | Uppercase spellings to skip (e.g. `["STEP"]`) |
 | `basicnext.formatOnSave` | `false` | Uppercase reserved words + normalize `END   FUNCTION` → `END FUNCTION` on save |
-| `basicnext.runArgs` | `[]` | Extra args after `bn run` |
-| `basicnext.buildArgs` | `[]` | Extra args after `bn build` |
-| `basicnext.checkArgs` | `[]` | Extra args after `bn check` |
-| `basicnext.lspArgs` | `[]` | Extra args after `bn lsp` |
-| `basicnext.checkOnSave` | `true` | Run `bn check` on save |
-| `basicnext.checkOnType` | `false` | Debounced `bn check` while typing |
+| `basicnext.runArgs` | `[]` | Extra args after `bni run` |
+| `basicnext.buildArgs` | `[]` | Extra args passed to `bnc` |
+| `basicnext.checkArgs` | `[]` | Extra args after `bni check` |
+| `basicnext.lspArgs` | `[]` | Extra args after `bni lsp` |
+| `basicnext.checkOnSave` | `true` | Run `bni check` on save |
+| `basicnext.checkOnType` | `false` | Debounced `bni check` while typing |
 | `basicnext.checkDebounceMs` | `500` | Debounce for check-on-type |
 | `basicnext.diagnosticsMinimumSeverity` | `warning` | `error` / `warning` / `hint` |
 | `basicnext.snippets.enabled` | `true` | Documented; snippets are always contributed — disable via VS Code Snippets UI |
@@ -61,41 +63,23 @@ indentation.
 
 ## Snippets
 
-Contributed for `FUNCTION`, `WHILE`, `IF`, `FOR`, `REPEAT`, `CLASS`, and
-common `IMPORT HOST.*` forms. To disable, use the VS Code Snippets UI
-(or leave `basicnext.snippets.enabled` as documentation for preference).
+Contributed for `FUNCTION`, `WHILE`, `IF`, `FOR`, `REPEAT`, `CLASS`,
+`IMPORT HOST.*` capabilities, and standard `IMPORT BN*` libraries (`BNSqlite`,
+`BNData`, `BNLog`, `BNJson`, `BNMath`, `BNDispatch`, `BNCrypto`, `BNWeb`).
 
 ## Use
 
-- Open a `.bn` file. VS Code selects the `Basic Next` language mode and
-  applies syntax highlighting, folding markers, and indentation rules.
-- Status bar shows **Basic Next** plus the `bn` version (or a missing-binary
-  hint). Click for Check / Run / Build and Run.
-- The extension starts `bn lsp` (plus `basicnext.lspArgs`) for open Basic Next
-  workspaces and forwards full-document changes. Diagnostics, definition
-  lookup, and completion are provided by the Rust frontend; set
-  `basicnext.executable` if the binary is not on `PATH`.
-- Save the file to run `bn check` when `basicnext.checkOnSave` is true;
-  source-spanned errors appear in the Problems panel (filtered by
-  `basicnext.diagnosticsMinimumSeverity`).
-- Format Document / format-on-save (when enabled) uppercases reserved words
-  outside strings/comments and normalizes `END` block spacing.
-- Use **Basic Next: Run** from the Command Palette, the editor run menu, or
-  `Cmd+F5` (`Ctrl+F5` on Windows/Linux) to run `bn run` (plus `runArgs`) in an
-  integrated terminal.
-- Use **Basic Next: Build and Run** or `Cmd+Shift+F5` (`Ctrl+Shift+F5`) to
-  build a temporary native artifact and execute it.
-- The Run and Debug view exposes **Run Basic Next** through the native `bn dap`
-  service. The adapter forwards DAP over bounded local stdio; it does not open
-  a terminal or execute `bn run` for a debug session.
-- Breakpoints, pause, continue, stack/scopes/variables, and stepping are
-  debugger operations. Stepping follows interpreter IR instructions carrying
-  Basic Next source spans: multiple instructions may map to one source line,
-  and loops may revisit a line. The debugger is not a REPL and does not
-  evaluate arbitrary expressions.
+* Open a `.bn` file. VS Code selects the `Basic Next` language mode and applies syntax highlighting, folding markers, and indentation rules.
+* Status bar shows **Basic Next** plus the `bni` version (or a missing-binary hint). Click for Check / Run / Build and Run.
+* The extension starts `bni lsp` (plus `basicnext.lspArgs`) for open Basic Next workspaces and forwards full-document changes. Diagnostics, definition lookup, and completion are provided by the Rust frontend; set `basicnext.executable` if the binary is not on `PATH`.
+* Save the file to run `bni check` when `basicnext.checkOnSave` is true; source-spanned errors appear in the Problems panel (filtered by `basicnext.diagnosticsMinimumSeverity`).
+* Format Document / format-on-save (when enabled) uppercases reserved words outside strings/comments and normalizes `END` block spacing.
+* Use **Basic Next: Run** from the Command Palette, the editor run menu, or `Cmd+F5` (`Ctrl+F5` on Windows/Linux) to run `bni run` (plus `runArgs`) in an integrated terminal.
+* Use **Basic Next: Build and Run** or `Cmd+Shift+F5` (`Ctrl+Shift+F5`) to compile with `bnc` to a temporary native artifact and execute it.
+* The Run and Debug view exposes **Run Basic Next** through the native `bni dap` service. The adapter forwards DAP over bounded local stdio; it does not open a terminal or execute `bni run` for a debug session.
+* Breakpoints, pause, continue, stack/scopes/variables, and stepping are debugger operations. Stepping follows interpreter IR instructions carrying Basic Next source spans: multiple instructions may map to one source line, and loops may revisit a line. The debugger is not a REPL and does not evaluate arbitrary expressions.
 
-The bundled TextMate grammar is synchronized with
-`docs/library/basicnext.tmLanguage.json`.
+The bundled TextMate grammar is synchronized with `docs/library/basicnext.tmLanguage.json`.
 
 Block keywords use distinct TextMate scopes and default colors per block kind.
 `END` shares the **same** color as its block keyword (`END FUNCTION` with
