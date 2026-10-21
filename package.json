@@ -5,6 +5,10 @@
   "version": "0.6.5",
   "publisher": "basicnext",
   "license": "MPL-2.0",
+  "author": "Carlos Quintella",
+  "contributors": [
+    "Grok"
+  ],
   "engines": {
     "vscode": ">=1.80.0"
   },

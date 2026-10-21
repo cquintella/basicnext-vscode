@@ -86,3 +86,8 @@ Block keywords use distinct TextMate scopes and default colors per block kind.
 `END` shares the **same** color as its block keyword (`END FUNCTION` with
 `FUNCTION`, `END WHILE` with `WHILE`, `END IF` with `IF`, and likewise for
 `FOR` / `CLASS` / `STRUCT` / `INTERFACE` / constructor / destructor).
+
+## Contributors
+
+* Carlos Quintella
+* Grok
