@@ -1,8 +1,8 @@
 {
   "name": "basicnext",
   "displayName": "Basic Next",
-  "description": "Language support for Basic Next 0.6.4 (bni/bnc toolchain, ARC, typed BN IR, BNSqlite, HOST providers)",
-  "version": "0.6.4",
+  "description": "Language support for Basic Next 0.6.5 (bni/bnc toolchain, ARC, typed BN IR, BN* modules, HOST providers)",
+  "version": "0.6.5",
   "publisher": "basicnext",
   "license": "MPL-2.0",
   "engines": {
@@ -69,7 +69,13 @@
                 "type": "string"
               },
               "runtimeExecutable": {
-                "type": "string"
+                "type": "string",
+                "description": "Path to `bni`. Empty: the `bni` on PATH."
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "description": "Pause before the first instruction. `bni dap` runs straight through when this is omitted.",
+                "default": false
               }
             }
           }
@@ -143,12 +149,12 @@
         "basicnext.executable": {
           "type": "string",
           "default": "",
-          "description": "Path to the Basic Next interpreter executable (`bni`). Empty: resolve `bni` on PATH (or fallback to `bn`)."
+          "description": "Path to the Basic Next interpreter executable (`bni`). Empty: resolve `bni` on PATH."
         },
         "basicnext.compilerExecutable": {
           "type": "string",
           "default": "",
-          "description": "Path to the Basic Next compiler executable (`bnc`). Empty: resolve `bnc` on PATH or adjacent to `bni` (or fallback to `bn`)."
+          "description": "Path to the Basic Next compiler executable (`bnc`). Empty: resolve `bnc` on PATH or adjacent to `bni`."
         },
         "basicnext.autoUppercaseKeywords": {
           "type": "boolean",

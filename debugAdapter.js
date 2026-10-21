@@ -31,7 +31,8 @@ function flushPendingMessages() {
 }
 
 function startChild(request) {
-  // 0.6: the debugger is `bni dap`; `bn dap` still works through the dispatcher.
+  // 0.6: the debugger is `bni dap`. A stop at entry happens only when the
+  // launch arguments set `stopOnEntry` (the server default is false).
   const { program, cwd, runtimeExecutable = "bni" } = request.arguments ?? {};
   if (typeof program !== "string" || program.length === 0) {
     throw new Error("launch requires a program");

@@ -59,8 +59,12 @@ function matchNamed(grammar, name) {
 }
 
 const words = wordTerminals(library);
-for (const required of ["PARALLEL", "SYSTEM", "NAN", "INF", "IF"]) {
+for (const required of ["PARALLEL", "SYSTEM", "NAN", "INF", "IF", "PROTECTED", "OVERRIDE", "RELEASE"]) {
   assert.ok(words.has(required), `${required} must be a TextMate word terminal`);
+}
+const modules = matchNamed(library, "support.class.bn");
+for (const name of ["BNCrypto", "BNData", "BNDispatch", "BNJson", "BNLog", "BNMath", "BNPallet", "BNSqlite", "BNString", "BNWeb"]) {
+  assert.ok(modules.test(name), `${name} must highlight as a standard module`);
 }
 assert.ok(!words.has("-INF"));
 

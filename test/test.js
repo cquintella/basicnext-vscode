@@ -10,7 +10,7 @@ const path = require("path");
 
 const extension = path.resolve(__dirname, "..");
 const packageJson = JSON.parse(fs.readFileSync(path.join(extension, "package.json"), "utf8"));
-assert.strictEqual(packageJson.version, "0.6.4");
+assert.strictEqual(packageJson.version, "0.6.5");
 assert.strictEqual(packageJson.contributes.grammars[0].path, "./syntaxes/basicnext.tmLanguage.json");
 assert.strictEqual(packageJson.contributes.debuggers[0].type, "basicnext");
 assert.deepStrictEqual(packageJson.contributes.debuggers[0].languages, ["basicnext"]);
@@ -29,7 +29,7 @@ const terminalLines = [];
 let activeEditor;
 let saveCount = 0;
 const configValues = {
-  executable: "bn",
+  executable: "",
   autoUppercaseKeywords: true,
   autoUppercaseOnPaste: true,
   autoUppercaseExclusions: [],
@@ -158,13 +158,13 @@ assert.strictEqual(typeof commands["basicnext.statusBarAction"], "function");
   await commands["basicnext.run"]();
   await commands["basicnext.buildAndRun"]();
   assert.strictEqual(saveCount, 2);
-  assert.match(terminalLines[0], /'(bni|bn)' run '\/tmp\/example\.bn'/);
-  assert.match(terminalLines[1], /'(bnc|bn)'( build)? '\/tmp\/example\.bn' -o .* && /);
+  assert.match(terminalLines[0], /'bni' run '\/tmp\/example\.bn'/);
+  assert.match(terminalLines[1], /'bnc' '\/tmp\/example\.bn' -o .* && /);
 
   configValues.runArgs = ["--trace"];
   terminalLines.length = 0;
   await commands["basicnext.run"]();
-  assert.match(terminalLines[0], /'(bni|bn)' run '--trace' '\/tmp\/example\.bn'/);
+  assert.match(terminalLines[0], /'bni' run '--trace' '\/tmp\/example\.bn'/);
 
   console.log("Basic Next VS Code extension checks passed");
 })().catch((error) => {

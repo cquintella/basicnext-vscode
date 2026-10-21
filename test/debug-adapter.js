@@ -94,4 +94,5 @@ send("launch", {
   program: helloFile,
   cwd: bnRepo,
   runtimeExecutable,
+  stopOnEntry: true,
 });

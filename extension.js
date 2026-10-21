@@ -23,42 +23,37 @@ function cfg() {
 }
 
 // Basic Next 0.6 ships two executables: `bni` (interpreter, check, lsp, dap)
-// and `bnc` (compiler); `bn` is a compatibility dispatcher that retires in
-// 0.7. An explicit `basicnext.executable` wins; otherwise prefer `bni` when
-// it runs, and fall back to `bn` for a 0.5 toolchain.
+// and `bnc` (native compiler). The combined `bn` executable is gone.
+// An explicit `basicnext.executable` wins; otherwise resolve `bni` on PATH.
 let resolvedExecutable = null;
 function defaultExecutable() {
   if (resolvedExecutable) return resolvedExecutable;
-  for (const candidate of ["bni", "bn"]) {
-    try {
-      const probe = cp.spawnSync(candidate, ["--version"], { timeout: 4000 });
-      if (probe.status === 0) return (resolvedExecutable = candidate);
-    } catch (_) { /* try the next candidate */ }
-  }
+  try {
+    const probe = cp.spawnSync("bni", ["--version"], { timeout: 4000 });
+    if (probe.status === 0) return (resolvedExecutable = "bni");
+  } catch (_) { /* bni is still the command the terminal will run */ }
   return (resolvedExecutable = "bni");
 }
 function executablePath() {
   const configured = cfg().get("executable", "");
-  return configured && configured !== "bn" ? configured : defaultExecutable();
+  return configured ? configured : defaultExecutable();
 }
 
 let resolvedCompiler = null;
 function defaultCompilerExecutable() {
   if (resolvedCompiler) return resolvedCompiler;
   const interp = executablePath();
-  if (interp && interp !== "bni" && interp !== "bn") {
+  if (interp && path.basename(interp) !== "bni" && path.basename(interp) !== "bni.exe") {
     const candidate = path.join(path.dirname(interp), process.platform === "win32" ? "bnc.exe" : "bnc");
     try {
       const probe = cp.spawnSync(candidate, ["--version"], { timeout: 4000 });
       if (probe.status === 0) return (resolvedCompiler = candidate);
-    } catch (_) { /* try the next candidate */ }
+    } catch (_) { /* fall through to PATH */ }
   }
-  for (const candidate of ["bnc", "bn"]) {
-    try {
-      const probe = cp.spawnSync(candidate, ["--version"], { timeout: 4000 });
-      if (probe.status === 0) return (resolvedCompiler = candidate);
-    } catch (_) { /* try the next candidate */ }
-  }
+  try {
+    const probe = cp.spawnSync("bnc", ["--version"], { timeout: 4000 });
+    if (probe.status === 0) return (resolvedCompiler = "bnc");
+  } catch (_) { /* bnc is still the command the terminal will run */ }
   return (resolvedCompiler = "bnc");
 }
 function compilerExecutablePath() {
@@ -683,14 +678,9 @@ function activate(context) {
     const extension = process.platform === "win32" ? ".exe" : "";
     const artifact = path.join(os.tmpdir(), `basicnext-${path.basename(document.fileName, ".bn")}${extension}`);
     const extra = shellQuoteArgs(buildArgs);
-    const isLegacyBn = path.basename(compiler).toLowerCase().startsWith("bn") && !path.basename(compiler).toLowerCase().startsWith("bnc");
-    const buildCmd = isLegacyBn
-      ? (extra
-          ? `${shellQuote(compiler)} build ${extra} ${shellQuote(document.fileName)} -o ${shellQuote(artifact)}`
-          : `${shellQuote(compiler)} build ${shellQuote(document.fileName)} -o ${shellQuote(artifact)}`)
-      : (extra
-          ? `${shellQuote(compiler)} ${extra} ${shellQuote(document.fileName)} -o ${shellQuote(artifact)}`
-          : `${shellQuote(compiler)} ${shellQuote(document.fileName)} -o ${shellQuote(artifact)}`);
+    const buildCmd = extra
+      ? `${shellQuote(compiler)} ${extra} ${shellQuote(document.fileName)} -o ${shellQuote(artifact)}`
+      : `${shellQuote(compiler)} ${shellQuote(document.fileName)} -o ${shellQuote(artifact)}`;
     terminal().sendText(`${buildCmd} && ${shellQuote(artifact)}`);
   };
   const check = async () => {

@@ -278,7 +278,7 @@
         },
         "modules": {
             "name": "support.class.bn",
-            "match": "\\b(BNMath|BNData|BNLog|BNWeb|BNJson|BNDispatch|BNCrypto|BNSqlite)\\b"
+            "match": "\\b(BNCrypto|BNData|BNDispatch|BNJson|BNLog|BNMath|BNPallet|BNSqlite|BNString|BNWeb)\\b"
         }
     }
 }

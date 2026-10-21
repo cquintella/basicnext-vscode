@@ -88,6 +88,13 @@
     ],
     "description": "IMPORT HOST.Exec AS …"
   },
+  "Import Host Env": {
+    "prefix": "IMPORT HOST.Env",
+    "body": [
+      "IMPORT HOST.Env AS ${1:Env}"
+    ],
+    "description": "IMPORT HOST.Env AS …"
+  },
   "Import Host Random": {
     "prefix": "IMPORT HOST.Random",
     "body": [
@@ -150,5 +157,19 @@
       "IMPORT BNWeb AS ${1:Web}"
     ],
     "description": "IMPORT BNWeb AS …"
+  },
+  "Import BNString": {
+    "prefix": "IMPORT BNString",
+    "body": [
+      "IMPORT BNString AS ${1:S}"
+    ],
+    "description": "IMPORT BNString AS …"
+  },
+  "Import BNPallet": {
+    "prefix": "IMPORT BNPallet",
+    "body": [
+      "IMPORT BNPallet AS ${1:Pal}"
+    ],
+    "description": "IMPORT BNPallet AS …"
   }
 }

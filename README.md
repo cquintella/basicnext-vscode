@@ -1,11 +1,11 @@
 # Basic Next for VS Code
 
-Basic Next **0.6.4** language support for Visual Studio Code (extension **0.6.4**).
+Basic Next **0.6.5** language support for Visual Studio Code (extension **0.6.5**).
 
-Aligned with Basic Next 0.6:
-* Dual toolchain support: `bni` (reference interpreter, checker, LSP, DAP) and `bnc` (native AOT compiler for executables and WebAssembly).
-* Full syntax highlighting for 0.6 language features: `RELEASE`, `WEAK`, `ASYNC`, `AWAIT`, `PROTECTED`, `OVERRIDE`, and `BNSqlite`.
-* Standard module snippets: `HOST.FileSystem`, `HOST.Net`, `HOST.Clock`, `HOST.Console`, `HOST.Exec`, `HOST.Random`, `BNSqlite`, `BNData`, `BNLog`, `BNJson`, `BNMath`, `BNDispatch`, `BNCrypto`, `BNWeb`.
+Aligned with Basic Next 0.6.5:
+* Dual toolchain: `bni` (reference interpreter, checker, LSP, DAP) and `bnc` (native compiler). `bnc` does not emit WebAssembly. The combined `bn` executable is not used.
+* Syntax highlighting for the 0.6 reserved words, including `RELEASE`, `WEAK`, `ASYNC`, `AWAIT`, `PROTECTED` and `OVERRIDE`. 0.6.5 adds no reserved word. `HOST.Env` is an import, not a keyword.
+* Standard module snippets: `HOST.FileSystem`, `HOST.Net`, `HOST.Clock`, `HOST.Console`, `HOST.Exec`, `HOST.Env`, `HOST.Random`, `BNSqlite`, `BNData`, `BNLog`, `BNJson`, `BNMath`, `BNDispatch`, `BNCrypto`, `BNWeb`, `BNString`, `BNPallet`.
 * Direct execution and debugging via `bni dap`.
 
 ## Install
@@ -14,7 +14,7 @@ Package the extension and install the generated VSIX file:
 
 ```sh
 npx --yes @vscode/vsce package --allow-missing-repository
-code --install-extension basicnext-0.6.4.vsix
+code --install-extension basicnext-0.6.5.vsix
 ```
 
 Restart VS Code completely after installing or updating the extension. The
@@ -65,7 +65,8 @@ indentation.
 
 Contributed for `FUNCTION`, `WHILE`, `IF`, `FOR`, `REPEAT`, `CLASS`,
 `IMPORT HOST.*` capabilities, and standard `IMPORT BN*` libraries (`BNSqlite`,
-`BNData`, `BNLog`, `BNJson`, `BNMath`, `BNDispatch`, `BNCrypto`, `BNWeb`).
+`BNData`, `BNLog`, `BNJson`, `BNMath`, `BNDispatch`, `BNCrypto`, `BNWeb`,
+`BNString`, `BNPallet`).
 
 ## Use
 
@@ -76,7 +77,7 @@ Contributed for `FUNCTION`, `WHILE`, `IF`, `FOR`, `REPEAT`, `CLASS`,
 * Format Document / format-on-save (when enabled) uppercases reserved words outside strings/comments and normalizes `END` block spacing.
 * Use **Basic Next: Run** from the Command Palette, the editor run menu, or `Cmd+F5` (`Ctrl+F5` on Windows/Linux) to run `bni run` (plus `runArgs`) in an integrated terminal.
 * Use **Basic Next: Build and Run** or `Cmd+Shift+F5` (`Ctrl+Shift+F5`) to compile with `bnc` to a temporary native artifact and execute it.
-* The Run and Debug view exposes **Run Basic Next** through the native `bni dap` service. The adapter forwards DAP over bounded local stdio; it does not open a terminal or execute `bni run` for a debug session.
+* The Run and Debug view exposes **Run Basic Next** through `bni dap`. The adapter forwards DAP over bounded local stdio; it does not open a terminal or execute `bni run` for a debug session. Set `stopOnEntry` to pause before the first instruction; otherwise the program runs until a breakpoint.
 * Breakpoints, pause, continue, stack/scopes/variables, and stepping are debugger operations. Stepping follows interpreter IR instructions carrying Basic Next source spans: multiple instructions may map to one source line, and loops may revisit a line. The debugger is not a REPL and does not evaluate arbitrary expressions.
 
 The bundled TextMate grammar is synchronized with `docs/library/basicnext.tmLanguage.json`.
