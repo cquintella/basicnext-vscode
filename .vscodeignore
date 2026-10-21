@@ -2,3 +2,4 @@ test/**
 **/*.vsix
 .vscode/**
 **/.DS_Store
+ROADMAP.md
