@@ -5,8 +5,19 @@
 
 const vscode = require("vscode");
 const cp = require("child_process");
+const fs = require("fs");
+const https = require("https");
 const os = require("os");
 const path = require("path");
+
+const EXTENSION_VERSION = require("./package.json").version;
+const KEYWORD_MANUAL_FILE = "en/21_keywords.md";
+const KEYWORD_MANUAL_URL = "https://raw.githubusercontent.com/cquintella/basicnext-book/main/en/21_keywords.md";
+const KEYWORD_MANUAL_MARKER = "### END FUNCTION";
+const KEYWORD_MANUAL_MAX_BYTES = 1048576;
+const KEYWORD_MANUAL_TIMEOUT_MS = 15000;
+const KEYWORD_MANUAL_REDIRECT_LIMIT = 3;
+const KEYWORD_MANUAL_VERSION_KEY = "keywordManualVersion";
 
 function shellQuote(value) {
   return process.platform === "win32"
@@ -20,6 +31,204 @@ function shellQuoteArgs(args) {
 
 function cfg() {
   return vscode.workspace.getConfiguration("basicnext");
+}
+
+function keywordManualUrl() {
+  const configured = cfg().get("keywordManualUrl", "");
+  return configured || KEYWORD_MANUAL_URL;
+}
+
+function parseKeywordManual(markdown) {
+  const entries = new Map();
+  let heading = "";
+  let body = [];
+  const flush = () => {
+    const text = body.join("\n").trim();
+    if (heading && text) entries.set(heading.toUpperCase(), `### ${heading}\n\n${text}`);
+    heading = "";
+    body = [];
+  };
+  for (const line of String(markdown).split(/\r?\n/)) {
+    const match = /^### (.+)$/.exec(line);
+    if (match) {
+      flush();
+      heading = match[1].trim();
+      continue;
+    }
+    if (heading && (/^#{1,2} /.test(line) || line.trim() === "---")) {
+      flush();
+      continue;
+    }
+    if (heading) body.push(line);
+  }
+  flush();
+  return entries;
+}
+
+function wordAt(text, offset) {
+  const isWord = (character) => /[A-Za-z0-9]/.test(character);
+  let index = offset;
+  if (index > 0 && index <= text.length && !isWord(text[index] || "") && isWord(text[index - 1])) index -= 1;
+  if (index < 0 || index >= text.length || !isWord(text[index])) return null;
+  let start = index;
+  while (start > 0 && isWord(text[start - 1])) start -= 1;
+  let end = index + 1;
+  while (end < text.length && isWord(text[end])) end += 1;
+  return { start, end, text: text.slice(start, end) };
+}
+
+function wordFrom(text, index) {
+  while (index < text.length && /\s/.test(text[index])) index += 1;
+  if (index >= text.length) return null;
+  return wordAt(text, index);
+}
+
+function wordBefore(text, index) {
+  while (index > 0 && /\s/.test(text[index - 1])) index -= 1;
+  if (index === 0) return null;
+  return wordAt(text, index - 1);
+}
+
+function keywordPhraseAt(text, offset, entries) {
+  const word = wordAt(text, offset);
+  if (!word || !entries || entries.size === 0) return null;
+  const next = wordFrom(text, word.end);
+  const previous = wordBefore(text, word.start);
+  const ahead = next ? entries.get(`${word.text} ${next.text}`.toUpperCase()) : null;
+  if (ahead) return ahead;
+  const behind = previous ? entries.get(`${previous.text} ${word.text}`.toUpperCase()) : null;
+  if (behind) return behind;
+  return entries.get(word.text.toUpperCase()) || null;
+}
+
+let keywordEntries = new Map();
+let keywordManualReady = Promise.resolve();
+
+function rememberKeywordManual(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) {
+    keywordEntries = new Map();
+    return;
+  }
+  keywordEntries = parseKeywordManual(fs.readFileSync(filePath, "utf8"));
+}
+
+function downloadKeywordManual(url, destination, get, redirectsLeft) {
+  const remaining = redirectsLeft === undefined ? KEYWORD_MANUAL_REDIRECT_LIMIT : redirectsLeft;
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+    let request;
+    try {
+      request = get(url, { timeout: KEYWORD_MANUAL_TIMEOUT_MS }, (response) => {
+        const status = response.statusCode || 0;
+        const location = response.headers && response.headers.location;
+        if (status >= 300 && status < 400 && location && remaining > 0) {
+          if (typeof response.resume === "function") response.resume();
+          let next;
+          try {
+            next = new URL(location, url);
+          } catch (_) {
+            finish(null);
+            return;
+          }
+          if (next.protocol !== "https:") {
+            finish(null);
+            return;
+          }
+          downloadKeywordManual(next.toString(), destination, get, remaining - 1).then(finish);
+          return;
+        }
+        if (status !== 200) {
+          if (typeof response.resume === "function") response.resume();
+          finish(null);
+          return;
+        }
+        const chunks = [];
+        let size = 0;
+        let tooBig = false;
+        response.on("data", (chunk) => {
+          size += chunk.length;
+          if (size > KEYWORD_MANUAL_MAX_BYTES) {
+            tooBig = true;
+            response.destroy();
+            return;
+          }
+          chunks.push(chunk);
+        });
+        response.on("end", () => {
+          if (tooBig) {
+            finish(null);
+            return;
+          }
+          const body = Buffer.concat(chunks);
+          if (!body.includes(KEYWORD_MANUAL_MARKER)) {
+            finish(null);
+            return;
+          }
+          fs.mkdirSync(path.dirname(destination), { recursive: true });
+          const temporary = `${destination}.download`;
+          fs.writeFileSync(temporary, body);
+          fs.renameSync(temporary, destination);
+          finish(destination);
+        });
+        response.on("error", () => finish(null));
+      });
+    } catch (_) {
+      finish(null);
+      return;
+    }
+    if (!request || typeof request.on !== "function") {
+      finish(null);
+      return;
+    }
+    request.on("error", () => finish(null));
+    request.on("timeout", () => {
+      if (typeof request.destroy === "function") request.destroy();
+      finish(null);
+    });
+  });
+}
+
+function installKeywordManual(context, options = {}) {
+  const storage = context && context.globalStorageUri && context.globalStorageUri.fsPath;
+  if (!storage) return Promise.resolve(null);
+  const destination = path.join(storage, KEYWORD_MANUAL_FILE);
+  const version = options.version || EXTENSION_VERSION;
+  const stored = context.globalState && typeof context.globalState.get === "function"
+    ? context.globalState.get(KEYWORD_MANUAL_VERSION_KEY)
+    : undefined;
+  if (stored === version && fs.existsSync(destination)) return Promise.resolve(destination);
+  const url = options.url || keywordManualUrl();
+  const get = options.get || https.get.bind(https);
+  return downloadKeywordManual(url, destination, get).then((saved) => {
+    if (!saved) return null;
+    if (context.globalState && typeof context.globalState.update === "function") {
+      return Promise.resolve(context.globalState.update(KEYWORD_MANUAL_VERSION_KEY, version)).then(() => saved);
+    }
+    return saved;
+  });
+}
+
+function offsetInText(text, position) {
+  const lines = text.split("\n");
+  const line = Math.min(position.line || 0, lines.length);
+  let offset = 0;
+  for (let index = 0; index < line; index += 1) offset += lines[index].length + 1;
+  return offset + (position.character || 0);
+}
+
+function keywordHover(document, position) {
+  const text = document.getText();
+  const offset = typeof document.offsetAt === "function"
+    ? document.offsetAt(position)
+    : offsetInText(text, position);
+  const entry = keywordPhraseAt(text, offset, keywordEntries);
+  if (!entry) return null;
+  return new vscode.Hover(new vscode.MarkdownString(entry));
 }
 
 // Basic Next 0.6 ships two executables: `bni` (interpreter, check, lsp, dap)
@@ -91,6 +300,16 @@ function parseDiagnostics(output) {
 }
 
 const SEVERITY_RANK = { error: 0, warning: 1, hint: 2 };
+
+function diagnosticSeverityFromLsp(severity) {
+  switch (severity) {
+    case 1: return vscode.DiagnosticSeverity.Error;
+    case 2: return vscode.DiagnosticSeverity.Warning;
+    case 3: return vscode.DiagnosticSeverity.Information;
+    case 4: return vscode.DiagnosticSeverity.Hint;
+    default: return vscode.DiagnosticSeverity.Error;
+  }
+}
 
 function diagnosticSeverityRank(severity) {
   if (severity === vscode.DiagnosticSeverity.Error) return 0;
@@ -455,6 +674,8 @@ async function applyBlockColorCustomizations() {
   await editorCfg.update("tokenColorCustomizations", merged, target);
 }
 
+let languageServerActive = false;
+
 function startLanguageServer(context, collection) {
   if (
     typeof cp.spawn !== "function" ||
@@ -493,17 +714,21 @@ function startLanguageServer(context, collection) {
         pending.get(message.id)(message.result ?? null);
         pending.delete(message.id);
       } else if (message.method === "textDocument/publishDiagnostics") {
-        const diagnostics = (message.params.diagnostics || []).map((item) => new vscode.Diagnostic(
-          new vscode.Range(item.range.start.line, item.range.start.character, item.range.end.line, item.range.end.character),
-          item.message,
-          item.severity === 2 ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error,
-        ));
+        const diagnostics = filterDiagnosticsBySeverity(
+          (message.params.diagnostics || []).map((item) => new vscode.Diagnostic(
+            new vscode.Range(item.range.start.line, item.range.start.character, item.range.end.line, item.range.end.character),
+            item.message,
+            diagnosticSeverityFromLsp(item.severity),
+          )),
+          cfg().get("diagnosticsMinimumSeverity", "warning"),
+        );
         collection.set(vscode.Uri.parse(message.params.uri), diagnostics);
       }
     }
   };
   child.stdout.on("data", (chunk) => { buffer = Buffer.concat([buffer, chunk]); consume(); });
-  child.on("error", () => {});
+  child.on("error", () => { languageServerActive = false; });
+  child.on("exit", () => { languageServerActive = false; });
   const initialize = send("initialize", { processId: process.pid, rootUri: cwd ? vscode.Uri.file(cwd).toString() : null, capabilities: {} });
   initialize.then(() => notify("initialized", {}));
   const sync = (document, method = "textDocument/didOpen") => {
@@ -517,16 +742,40 @@ function startLanguageServer(context, collection) {
     vscode.workspace.onDidCloseTextDocument((document) => notify("textDocument/didClose", { textDocument: { uri: document.uri.toString() } })),
     vscode.languages.registerDefinitionProvider("basicnext", { provideDefinition: (document, position) => send("textDocument/definition", { textDocument: { uri: document.uri.toString() }, position }).then((items) => items || []) }),
     vscode.languages.registerReferenceProvider("basicnext", { provideReferences: (document, position, context) => send("textDocument/references", { textDocument: { uri: document.uri.toString() }, position, context: { includeDeclaration: Boolean(context?.includeDeclaration) } }).then((items) => items || []) }),
-    vscode.languages.registerHoverProvider("basicnext", { provideHover: (document, position) => send("textDocument/hover", { textDocument: { uri: document.uri.toString() }, position }) }),
+    vscode.languages.registerHoverProvider("basicnext", {
+      provideHover: (document, position) => keywordManualReady.then(() => {
+        const manual = keywordHover(document, position);
+        if (manual) return manual;
+        return send("textDocument/hover", {
+          textDocument: { uri: document.uri.toString() },
+          position,
+        }).then((hover) => {
+          const contents = hover?.contents;
+          const value = typeof contents === "string" ? contents : contents?.value;
+          if (!value) return null;
+          return new vscode.Hover(new vscode.MarkdownString(value));
+        });
+      }),
+    }),
     vscode.languages.registerDocumentSymbolProvider("basicnext", { provideDocumentSymbols: (document) => send("textDocument/documentSymbol", { textDocument: { uri: document.uri.toString() } }).then((items) => items || []) }),
     vscode.languages.registerCompletionItemProvider("basicnext", { provideCompletionItems: (document, position) => send("textDocument/completion", { textDocument: { uri: document.uri.toString() }, position }).then(lspCompletionItems) }, "."),
+    vscode.languages.registerFoldingRangeProvider("basicnext", {
+      provideFoldingRanges: (document) => send("textDocument/foldingRange", {
+        textDocument: { uri: document.uri.toString() },
+      }).then((items) => {
+        if (!Array.isArray(items)) return undefined;
+        return items.map((item) => new vscode.FoldingRange(item.startLine, item.endLine));
+      }),
+    }),
     { dispose: () => { notify("shutdown", null); notify("exit", null); child.kill(); } },
   );
   for (const document of vscode.workspace.textDocuments || []) sync(document);
+  languageServerActive = true;
   return child;
 }
 
 function runBnCheck(document, collection) {
+  if (languageServerActive) return;
   if (!document || document.languageId !== "basicnext" || document.isUntitled) return;
   const executable = executablePath();
   const checkArgs = cfg().get("checkArgs", []) || [];
@@ -656,6 +905,10 @@ function registerStatusBar(context) {
 }
 
 function activate(context) {
+  keywordManualReady = installKeywordManual(context).then((saved) => {
+    rememberKeywordManual(saved);
+    return saved;
+  }).catch(() => null);
   const collection = vscode.languages.createDiagnosticCollection("basicnext");
   const run = async () => {
     const document = activeDocument();
@@ -727,6 +980,12 @@ module.exports = {
   reservedWordUppercaseEdit,
   formatBasicNextSource,
   filterDiagnosticsBySeverity,
+  diagnosticSeverityFromLsp,
+  parseKeywordManual,
+  keywordPhraseAt,
+  installKeywordManual,
+  KEYWORD_MANUAL_FILE,
+  KEYWORD_MANUAL_URL,
   mergeBlockColorRules,
   BLOCK_COLOR_DEFAULTS,
   BLOCK_COLOR_SCOPES,

@@ -1,8 +1,8 @@
 {
   "name": "basicnext",
   "displayName": "Basic Next",
-  "description": "Language support for Basic Next 0.6.5 (bni/bnc toolchain, ARC, typed BN IR, BN* modules, HOST providers)",
-  "version": "0.6.5",
+  "description": "Language support for Basic Next 0.6.5 (extension 0.6.6; bni/bnc toolchain, ARC, typed BN IR, BN* modules, HOST providers). This extension release does not change the language.",
+  "version": "0.6.6",
   "publisher": "basicnext",
   "license": "MPL-2.0",
   "author": "Carlos Quintella",
@@ -215,15 +215,20 @@
           "default": [],
           "description": "Extra arguments inserted after `bni lsp`."
         },
+        "basicnext.keywordManualUrl": {
+          "type": "string",
+          "default": "https://raw.githubusercontent.com/cquintella/basicnext-book/main/en/21_keywords.md",
+          "description": "Appendix A of the tutorial book (en/21_keywords.md). Downloaded once when the extension is installed or updated, and shown when the pointer rests on a keyword."
+        },
         "basicnext.checkOnSave": {
           "type": "boolean",
           "default": true,
-          "description": "Run `bni check` when a Basic Next document is saved and publish diagnostics."
+          "description": "When `bni lsp` is not running, run `bni check` on save and publish diagnostics. With the language server up, Problems come from `bni lsp`."
         },
         "basicnext.checkOnType": {
           "type": "boolean",
           "default": false,
-          "description": "Run `bni check` while typing (debounced)."
+          "description": "When `bni lsp` is not running, run `bni check` while typing (debounced)."
         },
         "basicnext.checkDebounceMs": {
           "type": "number",
@@ -239,7 +244,7 @@
             "hint"
           ],
           "default": "warning",
-          "description": "Minimum diagnostic severity to show from `bni check` (error = errors only; warning = errors+warnings; hint = all)."
+          "description": "Minimum diagnostic severity to show (error = errors only; warning = errors and warnings; hint = all). Applies to `bni lsp` and to `bni check`."
         },
         "basicnext.snippets.enabled": {
           "type": "boolean",

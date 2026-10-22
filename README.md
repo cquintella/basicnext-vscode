@@ -1,8 +1,9 @@
 # Basic Next for VS Code
 
-Basic Next **0.6.5** language support for Visual Studio Code (extension **0.6.5**).
+Basic Next **0.6.5** language support for Visual Studio Code (extension **0.6.6**).
 
-Aligned with Basic Next 0.6.5:
+Extension 0.6.6 does not change the language. It supports Basic Next 0.6.5:
+
 * Dual toolchain: `bni` (reference interpreter, checker, LSP, DAP) and `bnc` (native compiler). `bnc` does not emit WebAssembly. The combined `bn` executable is not used.
 * Syntax highlighting for the 0.6 reserved words, including `RELEASE`, `WEAK`, `ASYNC`, `AWAIT`, `PROTECTED` and `OVERRIDE`. 0.6.5 adds no reserved word. `HOST.Env` is an import, not a keyword.
 * Standard module snippets: `HOST.FileSystem`, `HOST.Net`, `HOST.Clock`, `HOST.Console`, `HOST.Exec`, `HOST.Env`, `HOST.Random`, `BNSqlite`, `BNData`, `BNLog`, `BNJson`, `BNMath`, `BNDispatch`, `BNCrypto`, `BNWeb`, `BNString`, `BNPallet`.
@@ -10,11 +11,13 @@ Aligned with Basic Next 0.6.5:
 
 ## Install
 
-Download the VSIX from the [0.6.5 release](https://github.com/cquintella/basicnext-vscode/releases/tag/v0.6.5), then install that file with `code`:
+This repository is extension 0.6.6. The packaged file from the [0.6.5 release](https://github.com/cquintella/basicnext-vscode/releases/tag/v0.6.5) is the previous extension. Install 0.6.6 from this tree:
 
 ```sh
-curl -fL -o basicnext-0.6.5.vsix https://github.com/cquintella/basicnext-vscode/releases/download/v0.6.5/basicnext-0.6.5.vsix
-code --install-extension basicnext-0.6.5.vsix
+git clone https://github.com/cquintella/basicnext-vscode.git
+cd basicnext-vscode
+npx @vscode/vsce package
+code --install-extension basicnext-0.6.6.vsix
 ```
 
 Restart VS Code completely after installing or updating the extension. The
@@ -34,8 +37,9 @@ debugger contribution is loaded when the VS Code application starts.
 | `basicnext.buildArgs` | `[]` | Extra args passed to `bnc` |
 | `basicnext.checkArgs` | `[]` | Extra args after `bni check` |
 | `basicnext.lspArgs` | `[]` | Extra args after `bni lsp` |
-| `basicnext.checkOnSave` | `true` | Run `bni check` on save |
-| `basicnext.checkOnType` | `false` | Debounced `bni check` while typing |
+| `basicnext.keywordManualUrl` | book Appendix A | `en/21_keywords.md`, downloaded when the extension is installed or updated |
+| `basicnext.checkOnSave` | `true` | When `bni lsp` is down, run `bni check` on save |
+| `basicnext.checkOnType` | `false` | When `bni lsp` is down, debounced `bni check` while typing |
 | `basicnext.checkDebounceMs` | `500` | Debounce for check-on-type |
 | `basicnext.diagnosticsMinimumSeverity` | `warning` | `error` / `warning` / `hint` |
 | `basicnext.snippets.enabled` | `true` | Documented; snippets are always contributed — disable via VS Code Snippets UI |
@@ -70,10 +74,11 @@ Contributed for `FUNCTION`, `WHILE`, `IF`, `FOR`, `REPEAT`, `CLASS`,
 
 ## Use
 
-* Open a `.bn` file. VS Code selects the `Basic Next` language mode and applies syntax highlighting, folding markers, and indentation rules.
+* Open a `.bn` file. VS Code selects the `Basic Next` language mode and applies syntax highlighting and indentation rules. Folding comes from `bni lsp`.
+* On installation and on each extension update, the extension downloads `en/21_keywords.md` (Appendix A, one entry per reserved word, and one entry for each two-word form such as `END FUNCTION`). Resting the pointer on a keyword shows that entry. A name that is not a keyword still uses the hover from `bni lsp`.
 * Status bar shows **Basic Next** plus the `bni` version (or a missing-binary hint). Click for Check / Run / Build and Run.
 * The extension starts `bni lsp` (plus `basicnext.lspArgs`) for open Basic Next workspaces and forwards full-document changes. Diagnostics, definition lookup, and completion are provided by the Rust frontend; set `basicnext.executable` if the binary is not on `PATH`.
-* Save the file to run `bni check` when `basicnext.checkOnSave` is true; source-spanned errors appear in the Problems panel (filtered by `basicnext.diagnosticsMinimumSeverity`).
+* Problems come from `bni lsp` while it is running, including edits that are not saved yet. `bni check` on save or while typing runs only when that server is not running. Both are filtered by `basicnext.diagnosticsMinimumSeverity`.
 * Format Document / format-on-save (when enabled) uppercases reserved words outside strings/comments and normalizes `END` block spacing.
 * Use **Basic Next: Run** from the Command Palette, the editor run menu, or `Cmd+F5` (`Ctrl+F5` on Windows/Linux) to run `bni run` (plus `runArgs`) in an integrated terminal.
 * Use **Basic Next: Build and Run** or `Cmd+Shift+F5` (`Ctrl+Shift+F5`) to compile with `bnc` to a temporary native artifact and execute it.
