@@ -10,10 +10,10 @@ Aligned with Basic Next 0.6.5:
 
 ## Install
 
-Package the extension and install the generated VSIX file:
+Download the VSIX from the [0.6.5 release](https://github.com/cquintella/basicnext-vscode/releases/tag/v0.6.5), then install that file with `code`:
 
 ```sh
-npx --yes @vscode/vsce package --allow-missing-repository
+curl -fL -o basicnext-0.6.5.vsix https://github.com/cquintella/basicnext-vscode/releases/download/v0.6.5/basicnext-0.6.5.vsix
 code --install-extension basicnext-0.6.5.vsix
 ```
 
